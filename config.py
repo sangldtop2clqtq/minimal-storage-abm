@@ -22,9 +22,42 @@ CONFIG={
     },
     "miner_behavior": {"beta_leave": 2.0},
     "repair": {
-        "base_reward": 0,
-        "alpha": 0,
-        "beta_repair": 0,
+        "base_reward": 1.0,
+        "alpha": 2.0,
+        "beta_repair": 2.0,
+        "cost_per_replica": 1.0,
     },
     "endowment": {"initial": 10_000, "yield_rate": 0.008},
+    # One simulation time unit is one month. Cost drift is log(0.97),
+    # matching the previous 3% deterministic monthly decline in expectation.
+    "stochastic": {
+        "enabled": True,
+        "dt": 1.0,
+        "yield_process": {
+            "initial": 0.008,
+            "long_run": 0.008,
+            "kappa": 0.3,
+            "volatility": 0.002,
+        },
+        "cost_process": {
+            "drift": -0.030459207484708574,
+            "volatility": 0.04,
+        },
+        "token_price": {
+            "initial": 1.0,
+            "drift": 0.0,
+            "volatility": 0.12,
+            "crash_probability": 0.0,
+            "crash_multiplier": 0.1,
+        },
+        "slippage": {"alpha": 2.0, "beta": 98.0},
+        "demand": {"arrival_rate": 0.1, "size_min": 5.0, "size_max": 20.0},
+        "miner_failure_probability": 0.001,
+        "correlation": [
+            [1.0, -0.1, -0.1],
+            [-0.1, 1.0, 0.25],
+            [-0.1, 0.25, 1.0],
+        ],
+    },
+    "monte_carlo": {"runs": 100, "seed_start": 1000},
 }

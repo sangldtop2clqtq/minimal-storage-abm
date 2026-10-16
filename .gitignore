@@ -2,5 +2,5 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
-.envAGENTS.md
+.env
 AGENTS.md

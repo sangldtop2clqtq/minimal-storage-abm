@@ -27,7 +27,11 @@ class MinerAgent:
     #tinh capacity 
     @property
     def used_capacity(self):
-        return sum(dataset.size for dataset in self.datasets)
+        # Stable summation order helps identical seeds reproduce identical results.
+        return sum(
+            dataset.size
+            for dataset in sorted(self.datasets, key=lambda item: item.dataset_id)
+        )
     @property
     def free_capacity(self):
         return self.capacity-self.used_capacity

@@ -1,4 +1,4 @@
-"""Deterministic minimal ABM for perpetual storage.
+"""Agent-based model for perpetual storage with optional stochastic inputs.
 
 The model coordinates miners, datasets, pricing, exits, repairs, and the
 endowment. Random choices use a model-local ``random.Random`` instance.
@@ -12,6 +12,7 @@ from typing import Any
 from agent import MinerAgent
 from dataset import Dataset
 from mechanisms import bonding_curve, repair_probability, repair_reward
+from stochastic_environment import StochasticEnvironment
 
 
 class StorageModel:
@@ -31,6 +32,20 @@ class StorageModel:
         self.miners: list[MinerAgent] = []
         self.datasets: list[Dataset] = []
         self.metrics: list[dict[str, float | int]] = []
+        self.stochastic_cfg = self.config.get("stochastic", {})
+        self.stochastic_enabled = bool(self.stochastic_cfg.get("enabled", False))
+        self.environment = (
+            StochasticEnvironment(self.stochastic_cfg, int(self.seed) + 1_000_003)
+            if self.stochastic_enabled
+            else None
+        )
+        self.token_price = float(
+            self.stochastic_cfg.get("token_price", {}).get("initial", 1.0)
+        )
+        self.slippage = 0.0
+        self._demand_arrivals = 0
+        self._unserved_demand_gb = 0.0
+        self._random_failures = 0
 
         endowment_cfg = self.config.get("endowment", {})
         self.endowment = float(endowment_cfg.get("initial", 10_000.0))
@@ -169,6 +184,44 @@ class StorageModel:
         for miner in self.miners:
             miner.unit_cost *= reduction_factor
 
+    def _apply_random_failures(self, draws: list[bool]) -> int:
+        failed = 0
+        for miner, should_fail in zip(self.miners, draws):
+            if should_fail and miner.status == MinerAgent.ACTIVE:
+                for dataset in list(miner.datasets):
+                    self._remove_replica(miner, dataset)
+                miner.go_offline()
+                failed += 1
+        return failed
+
+    def _admit_demand(self, sizes: list[float]) -> tuple[int, float]:
+        """Add arriving datasets and place as many replicas as capacity allows."""
+        admitted = 0
+        unserved_gb = 0.0
+        cfg = self.config.get("datasets", {})
+        target = int(cfg.get("target_replicas", 5))
+        for size in sizes:
+            dataset = Dataset(
+                dataset_id=f"dataset-demand-{self.time}-{len(self.datasets)}",
+                size=float(size),
+                target_replicas=target,
+            )
+            self.datasets.append(dataset)
+            candidates = [
+                miner for miner in self.miners
+                if miner.status == MinerAgent.ACTIVE
+                and dataset not in miner.datasets
+                and miner.free_capacity >= dataset.size
+            ]
+            self.rng.shuffle(candidates)
+            for miner in candidates[:target]:
+                self._assign_replica(miner, dataset)
+            missing = dataset.replica_deficit
+            if missing == 0:
+                admitted += 1
+            unserved_gb += missing * dataset.size
+        return admitted, unserved_gb
+
     def process_miner_exits(self) -> list[MinerAgent]:
         """Decide exits from one shared snapshot, then apply them together."""
         cfg = self.config.get("miner_behavior", {})
@@ -177,9 +230,23 @@ class StorageModel:
             miner
             for miner in self.miners
             if miner.status == MinerAgent.ACTIVE
-            and self.rng.random()*4 < miner.leave_probability(beta)
+            and self.rng.random() < miner.leave_probability(beta)
         ]
 
+        for miner in leaving:
+            for dataset in list(miner.datasets):
+                self._remove_replica(miner, dataset)
+            miner.go_offline()
+        return leaving
+
+    def process_forced_miner_exits(self, exit_rate: float) -> list[MinerAgent]:
+        """Force a fraction of active miners offline and remove their replicas."""
+        if not 0.0 <= exit_rate <= 1.0:
+            raise ValueError("exit_rate phải nằm trong [0, 1]")
+
+        active = [miner for miner in self.miners if miner.status == MinerAgent.ACTIVE]
+        exit_count = round(len(active) * exit_rate)
+        leaving = self.rng.sample(active, exit_count) if exit_count else []
         for miner in leaving:
             for dataset in list(miner.datasets):
                 self._remove_replica(miner, dataset)
@@ -255,16 +322,29 @@ class StorageModel:
         successful_repairs: int,
         repair_cost: float,
         storage_reward: float,
+        forced_exits: int,
+        voluntary_exits: int,
+        random_failures: int = 0,
+        environment_state: dict[str, Any] | None = None,
     ) -> dict[str, float | int]:
         active = [m for m in self.miners if m.status == MinerAgent.ACTIVE]
         replicas = [d.replicas for d in self.datasets]
         metric: dict[str, float | int] = {
             "time": self.time,
             "active_miners": len(active),
+            "forced_exits": forced_exits,
+            "voluntary_exits": voluntary_exits,
+            "random_failures": random_failures,
             "total_capacity": self.calculate_total_capacity(),
             "used_capacity": self.calculate_used_storage(),
             "utilization": utilization,
             "storage_price": storage_price,
+            "yield_rate": self.yield_rate,
+            "token_price_usd": self.token_price,
+            "token_crash": int(environment_state.get("token_crash", 0)) if environment_state else 0,
+            "storage_reward_tokens": storage_reward / self.token_price,
+            "slippage": self.slippage,
+            "settlement_cost": storage_reward / (1.0 - self.slippage),
             "average_miner_profit": (
                 sum(m.profit for m in active) / len(active) if active else 0.0
             ),
@@ -289,13 +369,39 @@ class StorageModel:
             "successful_repairs": successful_repairs,
             "repair_cost": repair_cost,
             "storage_reward": storage_reward,
+            "demand_arrivals": self._demand_arrivals,
+            "fully_replicated_arrivals": self._demand_arrivals - sum(
+                1 for d in self.datasets if d.dataset_id.startswith(f"dataset-demand-{self.time}-")
+                and d.replica_deficit > 0
+            ),
+            "unserved_demand_gb": self._unserved_demand_gb,
             "endowment": self.endowment,
         }
+        if environment_state is not None:
+            metric["cost_growth"] = float(environment_state["cost_growth"])
         self.metrics.append(metric)
         return metric
 
-    def step(self) -> dict[str, float | int]:
-        """Advance the model by one month using staged updates."""
+    def step(self, forced_exit_rate: float = 0.0) -> dict[str, float | int]:
+        """Advance a month; an optional forced exit shock occurs at month start."""
+        environment_state = None
+        random_failures = 0
+        self._demand_arrivals = 0
+        self._unserved_demand_gb = 0.0
+        if self.environment is not None:
+            environment_state = self.environment.advance(len(self.miners))
+            self.yield_rate = float(environment_state["yield_rate"])
+            self.token_price = float(environment_state["token_price"])
+            self.slippage = float(environment_state["slippage"])
+            random_failures = self._apply_random_failures(
+                environment_state["miner_failures"]
+            )
+            self._demand_arrivals = len(environment_state["demand_sizes"])
+            _, self._unserved_demand_gb = self._admit_demand(
+                environment_state["demand_sizes"]
+            )
+
+        forced_exits = self.process_forced_miner_exits(forced_exit_rate)
         utilization = self.calculate_utilization()
         storage_price = self.update_storage_price(utilization)
         self.calculate_miner_economics(storage_price)
@@ -307,9 +413,10 @@ class StorageModel:
             if miner.status == MinerAgent.ACTIVE
         )
 
-        self.process_miner_exits()
+        voluntary_exits = self.process_miner_exits()
         repair_requests, successful_repairs, repair_cost = self.run_repair_game()
-        self.update_endowment(storage_reward, repair_cost)
+        settlement_cost = storage_reward / (1.0 - self.slippage)
+        self.update_endowment(settlement_cost, repair_cost)
         result = self.collect_metrics(
             utilization=utilization,
             storage_price=storage_price,
@@ -317,9 +424,19 @@ class StorageModel:
             successful_repairs=successful_repairs,
             repair_cost=repair_cost,
             storage_reward=storage_reward,
+            forced_exits=len(forced_exits),
+            voluntary_exits=len(voluntary_exits),
+            random_failures=random_failures,
+            environment_state=environment_state,
         )
-        # Current month uses C_t; this updates costs for the next month.
-        self.update_miner_costs()
+        # Deterministic decline remains available in the legacy mode. In
+        # stochastic mode, the GBM increment replaces it to avoid double count.
+        if environment_state is None:
+            self.update_miner_costs()
+        else:
+            growth = float(environment_state["cost_growth"])
+            for miner in self.miners:
+                miner.unit_cost *= growth
         self.time += 1
         return result
 

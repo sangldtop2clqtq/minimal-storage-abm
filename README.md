@@ -49,7 +49,7 @@ repair_reward = base_reward × (1 + alpha × replica_deficit / target_replicas)
 P_repair = 1 / (1 + exp(-beta_repair × repair_utility))
 ```
 
-Trong code hiện tại, quyết định rời mạng được so sánh bằng `rng.random() * 4 < P_leave`; do đó xác suất exit thực tế là `P_leave / 4`, không phải toàn bộ `P_leave`. Đây là chi tiết triển khai cần tính đến khi diễn giải kết quả.
+Miner exit được lấy mẫu bằng cách so sánh một số ngẫu nhiên đều trong `[0, 1)` với `P_leave`.
 
 ### Giảm chi phí và cập nhật Endowment
 
@@ -69,13 +69,20 @@ endowment_(t+1) = endowment_t × (1 + yield_rate)
 ├── model.py       # StorageModel và vòng lặp mô phỏng theo tháng
 ├── config.py      # Seed và tham số mô phỏng
 ├── run.py         # Entry point để chạy mô phỏng
-└── README.md
+├── experiments/   # Baseline, miner-exit và helper lưu output
+├── tests/         # Unit, invariant và reproducibility tests
+└── results/       # CSV thô, metadata, figures và tables
+    ├── raw/
+    ├── metadata/
+    ├── figures/
+    └── tables/
 ```
 
 ## Yêu cầu
 
 - Python 3.10 trở lên
-- Không cần cài thư viện bên ngoài cho phiên bản hiện tại
+- Mô phỏng chỉ dùng thư viện chuẩn Python
+- Cài `pytest` nếu muốn chạy bộ kiểm tra
 
 ## Cách chạy
 
@@ -92,6 +99,27 @@ py run.py
 ```
 
 Chương trình in số tháng chạy, seed, số miner hoạt động, data availability và Endowment ở tháng cuối. Các metrics từng tháng nằm trong `model.metrics` khi sử dụng model từ Python.
+
+### Chạy thí nghiệm
+
+Từ thư mục gốc project, chạy baseline hoặc cú sốc miner exit:
+
+```powershell
+python -m experiments.baseline
+python -m experiments.miner_exit
+```
+
+Baseline dùng cấu hình trong `config.py`. Miner-exit experiment cưỡng bức 30% miner đang hoạt động rời mạng tại model month 6. Metrics được lưu ở `results/raw/<experiment>/`; cấu hình, seed và thông tin kịch bản được lưu ở `results/metadata/<experiment>/`.
+
+### Chạy kiểm tra
+
+Cài pytest nếu môi trường chưa có, sau đó chạy từ thư mục gốc:
+
+```powershell
+python -m pytest
+```
+
+Bộ kiểm tra bao gồm công thức mechanism, hướng của leave probability, trạng thái dataset, đồng bộ replica/capacity, forced exit và khả năng tái lập theo seed.
 
 ## Cấu hình
 
@@ -137,7 +165,7 @@ Phiên bản hiện tại chưa mô phỏng:
 - Token price, slippage hoặc chuyển token thực tế
 - CIR yield, GBM storage cost hay các cú sốc ngẫu nhiên
 - Retrieval/popularity reward, slashing, Risk Buffer hoặc Insurance Fund
-- Monte Carlo nhiều lần chạy, xuất bảng CSV hoặc tạo biểu đồ
+- Monte Carlo nhiều lần chạy và tạo biểu đồ tự động
 
 Các giá trị cấu hình hiện tại là tham số khởi đầu để phát triển và kiểm tra phần mềm, **không phải tham số đã được hiệu chỉnh thực nghiệm**. Cần kiểm tra độ nhạy và so sánh nhiều seed trước khi dùng kết quả để đưa ra kết luận nghiên cứu.
 
