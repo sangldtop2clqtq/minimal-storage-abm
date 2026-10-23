@@ -73,3 +73,56 @@ def test_monthly_cost_decline_is_applied_for_next_step():
     initial_cost = model.miners[0].unit_cost
     model.update_miner_costs()
     assert model.miners[0].unit_cost == pytest.approx(initial_cost * 0.97)
+
+
+def test_exit_draws_are_independent_of_miner_iteration_order():
+    first = StorageModel(small_config())
+    second = StorageModel(deepcopy(small_config()))
+    for miner in first.miners + second.miners:
+        miner.profit = 0.0
+    second.miners.reverse()
+
+    first_leavers = {miner.miner_id for miner in first.process_miner_exits()}
+    second_leavers = {miner.miner_id for miner in second.process_miner_exits()}
+
+    assert first_leavers == second_leavers
+
+
+def test_end_of_period_utilization_matches_end_of_period_capacity():
+    config = small_config()
+    config["miner_behavior"]["beta_leave"] = 0.0
+    model = StorageModel(config)
+
+    row = model.step()
+
+    assert "pricing_utilization" in row
+    if row["total_capacity"] > 0:
+        assert row["utilization"] == pytest.approx(
+            row["used_capacity"] / row["total_capacity"]
+        )
+    else:
+        assert row["used_capacity"] == 0.0
+        assert row["utilization"] == 0.0
+
+
+def test_voluntary_leaver_is_paid_for_current_month_service():
+    config = small_config()
+    config["miners"].update(
+        {"count": 1, "capacity_min": 10.0, "capacity_max": 10.0,
+         "cost_min": 2.0, "cost_max": 2.0}
+    )
+    config["datasets"].update(
+        {"count": 1, "size_min": 1.0, "size_max": 1.0,
+         "target_replicas": 1}
+    )
+    config["bonding_curve"].update({"p_min": 1.0, "p_max": 1.0})
+    config["miner_behavior"]["beta_leave"] = 100.0
+    config["repair"].update({"base_reward": 0.0, "alpha": 0.0})
+    config["endowment"] = {"initial": 100.0, "yield_rate": 0.0}
+    model = StorageModel(config)
+
+    row = model.step()
+
+    assert row["voluntary_exits"] == 1
+    assert row["storage_reward"] == pytest.approx(1.0)
+    assert row["endowment"] == pytest.approx(99.0)

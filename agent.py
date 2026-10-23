@@ -23,6 +23,7 @@ class MinerAgent:
         self.profit = 0.0
         self.status = self.ACTIVE
         self.datasets = set()
+        self.reserved_capacity = 0.0
 
     #tinh capacity 
     @property
@@ -34,7 +35,22 @@ class MinerAgent:
         )
     @property
     def free_capacity(self):
-        return self.capacity-self.used_capacity
+        return self.capacity-self.used_capacity-self.reserved_capacity
+
+    def reserve_capacity(self, amount: float) -> None:
+        if amount <= 0:
+            raise ValueError("reserved amount must be positive")
+        if amount > self.free_capacity:
+            raise ValueError("not enough free capacity to reserve")
+        self.reserved_capacity += amount
+
+    def release_capacity(self, amount: float) -> None:
+        tolerance = 1e-12 * max(1.0, abs(amount), abs(self.reserved_capacity))
+        if amount <= 0 or amount - self.reserved_capacity > tolerance:
+            raise ValueError("invalid reserved capacity release")
+        self.reserved_capacity = max(0.0, self.reserved_capacity - amount)
+        if abs(self.reserved_capacity) < tolerance:
+            self.reserved_capacity = 0.0
 
     #them/xoa dataset
     def add_dataset(self,dataset):

@@ -1,20 +1,20 @@
 {
   "experiment": "monte_carlo",
   "run_name": "mc_100_runs_seed_1000",
-  "created_at_utc": "2026-10-16T02:22:15.573927+00:00",
+  "created_at_utc": "2026-10-23T02:42:25.223982+00:00",
   "runs": 100,
   "seed_start": 1000,
-  "months": 48,
-  "endowment_survival_probability": 0.0,
-  "final_endowment_mean": -33806.92439655956,
-  "final_endowment_p05": -42782.56309901272,
-  "final_endowment_p95": -22727.99662362703,
+  "months": 12,
+  "endowment_survival_probability": 0.87,
+  "final_endowment_mean": 1167.102612679586,
+  "final_endowment_p05": -756.7955369710334,
+  "final_endowment_p95": 3243.268350426305,
   "mean_availability_mean": 1.0,
   "mean_availability_p05": 1.0,
   "mean_availability_p95": 1.0,
   "config": {
     "simulation": {
-      "months": 48,
+      "months": 12,
       "seed": 46
     },
     "miners": {

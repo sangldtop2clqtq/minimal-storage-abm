@@ -1,8 +1,5 @@
 """Shared helpers for saving experiment output."""
 
-import csv
-import json
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -17,33 +14,26 @@ def save_run(
     config: dict[str, Any],
     metadata: dict[str, Any] | None = None,
 ) -> tuple[Path, Path]:
-    """Write monthly metrics as CSV and run configuration as JSON."""
-    raw_dir = PROJECT_ROOT / "results" / "raw" / experiment_name
-    metadata_dir = PROJECT_ROOT / "results" / "metadata" / experiment_name
-    raw_dir.mkdir(parents=True, exist_ok=True)
-    metadata_dir.mkdir(parents=True, exist_ok=True)
+    """Write a legacy single run into a new immutable run directory."""
+    # Local import avoids a module cycle: output.py imports PROJECT_ROOT here.
+    from experiments.output import (
+        capture_provenance,
+        create_run_directory,
+        save_json,
+        save_rows,
+    )
 
-    csv_path = raw_dir / f"{run_name}.csv"
-    json_path = metadata_dir / f"{run_name}.json"
-
-    if metrics:
-        with csv_path.open("w", newline="", encoding="utf-8") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=list(metrics[0].keys()))
-            writer.writeheader()
-            writer.writerows(metrics)
-    else:
-        csv_path.write_text("", encoding="utf-8")
-
+    run_dir = create_run_directory(
+        experiment_name, output_root=PROJECT_ROOT / "results"
+    )
+    csv_path = save_rows(run_dir / "monthly.csv", metrics)
     run_metadata = {
         "experiment": experiment_name,
         "run_name": run_name,
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "config": config,
+        "provenance": capture_provenance(),
     }
     if metadata:
         run_metadata.update(metadata)
-    json_path.write_text(
-        json.dumps(run_metadata, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
+    json_path = save_json(run_dir / "metadata.json", run_metadata)
     return csv_path, json_path

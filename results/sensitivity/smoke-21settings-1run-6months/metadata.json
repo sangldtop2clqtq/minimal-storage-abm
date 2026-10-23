@@ -1,0 +1,170 @@
+{
+  "experiment": "sensitivity_oat",
+  "runs_per_setting": 1,
+  "horizon_months": 6,
+  "total_settings": 21,
+  "planned_trajectories": 21,
+  "seed_start": 40000,
+  "design": [
+    {
+      "setting_id": "base",
+      "factor": "base",
+      "level": "base",
+      "requested_value": "normalized base configuration",
+      "unit": "mixed"
+    },
+    {
+      "setting_id": "initial_endowment-low",
+      "factor": "initial_endowment",
+      "level": "low",
+      "requested_value": 5000.0,
+      "unit": "USD"
+    },
+    {
+      "setting_id": "initial_endowment-high",
+      "factor": "initial_endowment",
+      "level": "high",
+      "requested_value": 20000.0,
+      "unit": "USD"
+    },
+    {
+      "setting_id": "monthly_yield-low",
+      "factor": "monthly_yield",
+      "level": "low",
+      "requested_value": 0.004,
+      "unit": "fraction/month"
+    },
+    {
+      "setting_id": "monthly_yield-high",
+      "factor": "monthly_yield",
+      "level": "high",
+      "requested_value": 0.012,
+      "unit": "fraction/month"
+    },
+    {
+      "setting_id": "initial_dataset_count-low",
+      "factor": "initial_dataset_count",
+      "level": "low",
+      "requested_value": 5,
+      "unit": "datasets (utilization proxy)"
+    },
+    {
+      "setting_id": "initial_dataset_count-high",
+      "factor": "initial_dataset_count",
+      "level": "high",
+      "requested_value": 20,
+      "unit": "datasets (utilization proxy)"
+    },
+    {
+      "setting_id": "target_replicas-low",
+      "factor": "target_replicas",
+      "level": "low",
+      "requested_value": 3,
+      "unit": "replicas/dataset"
+    },
+    {
+      "setting_id": "target_replicas-high",
+      "factor": "target_replicas",
+      "level": "high",
+      "requested_value": 7,
+      "unit": "replicas/dataset"
+    },
+    {
+      "setting_id": "base_repair_reward-low",
+      "factor": "base_repair_reward",
+      "level": "low",
+      "requested_value": 0.5,
+      "unit": "USD/completed repair"
+    },
+    {
+      "setting_id": "base_repair_reward-high",
+      "factor": "base_repair_reward",
+      "level": "high",
+      "requested_value": 2.0,
+      "unit": "USD/completed repair"
+    },
+    {
+      "setting_id": "repair_alpha-low",
+      "factor": "repair_alpha",
+      "level": "low",
+      "requested_value": 1.0,
+      "unit": "dimensionless"
+    },
+    {
+      "setting_id": "repair_alpha-high",
+      "factor": "repair_alpha",
+      "level": "high",
+      "requested_value": 4.0,
+      "unit": "dimensionless"
+    },
+    {
+      "setting_id": "repair_latency-low",
+      "factor": "repair_latency",
+      "level": "low",
+      "requested_value": 1,
+      "unit": "months"
+    },
+    {
+      "setting_id": "repair_latency-high",
+      "factor": "repair_latency",
+      "level": "high",
+      "requested_value": 3,
+      "unit": "months"
+    },
+    {
+      "setting_id": "exit_sensitivity-low",
+      "factor": "exit_sensitivity",
+      "level": "low",
+      "requested_value": 1.0,
+      "unit": "1/USD"
+    },
+    {
+      "setting_id": "exit_sensitivity-high",
+      "factor": "exit_sensitivity",
+      "level": "high",
+      "requested_value": 4.0,
+      "unit": "1/USD"
+    },
+    {
+      "setting_id": "cost_volatility-low",
+      "factor": "cost_volatility",
+      "level": "low",
+      "requested_value": 0.02,
+      "unit": "per sqrt(month)"
+    },
+    {
+      "setting_id": "cost_volatility-high",
+      "factor": "cost_volatility",
+      "level": "high",
+      "requested_value": 0.08,
+      "unit": "per sqrt(month)"
+    },
+    {
+      "setting_id": "failure_probability-low",
+      "factor": "failure_probability",
+      "level": "low",
+      "requested_value": 0.0,
+      "unit": "probability/miner/month"
+    },
+    {
+      "setting_id": "failure_probability-high",
+      "factor": "failure_probability",
+      "level": "high",
+      "requested_value": 0.005,
+      "unit": "probability/miner/month"
+    }
+  ],
+  "provenance": {
+    "created_at_utc": "2026-10-23T07:55:51.107548+00:00",
+    "git_commit": "1cc618ee8154ec1fe5606c31b7b79f1604804540",
+    "git_dirty": true,
+    "python_version": "3.13.12 | packaged by Anaconda, Inc. | (main, Feb 24 2026, 16:05:56) [MSC v.1942 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "package_versions": {
+      "numpy": "2.5.3",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "pytest": "9.1.1"
+    }
+  }
+}

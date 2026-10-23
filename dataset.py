@@ -11,6 +11,7 @@ class Dataset:
         self.size = size
         self.target_replicas = target_replicas
         self.miners = set()
+        self.ever_stored = False
 
     @property
     def replicas(self) -> int:
@@ -36,7 +37,12 @@ class Dataset:
         if miner in self.miners:
             return False
         self.miners.add(miner)
+        self.ever_stored = True
         return True
+
+    @property
+    def is_permanently_lost(self) -> bool:
+        return self.ever_stored and self.replicas == 0
 
     def remove_miner(self, miner) -> bool:
         if miner not in self.miners:

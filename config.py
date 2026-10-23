@@ -26,8 +26,14 @@ CONFIG={
         "alpha": 2.0,
         "beta_repair": 2.0,
         "cost_per_replica": 1.0,
+        "latency_months": 1,
+        "monthly_budget": None,
     },
-    "endowment": {"initial": 10_000, "yield_rate": 0.008},
+    "endowment": {
+        "initial": 10_000,
+        "yield_rate": 0.008,
+        "insolvency_policy": "allow_negative",
+    },
     # One simulation time unit is one month. Cost drift is log(0.97),
     # matching the previous 3% deterministic monthly decline in expectation.
     "stochastic": {

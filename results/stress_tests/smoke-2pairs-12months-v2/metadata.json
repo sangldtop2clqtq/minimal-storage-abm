@@ -1,0 +1,92 @@
+{
+  "experiment": "stress_tests",
+  "pair_count": 2,
+  "horizon_months": 12,
+  "seed_start": 30000,
+  "scenarios": {
+    "normal": {
+      "description": "No scheduled shock."
+    },
+    "mass_miner_exit": {
+      "description": "30% of active miners exit once at month 6.",
+      "forced_exit": {
+        "month": 6,
+        "rate": 0.3
+      }
+    },
+    "failure_spike": {
+      "description": "Monthly miner failure probability is 10% for months 6-8.",
+      "stochastic": {
+        "failure_shock": {
+          "month": 6,
+          "duration": 3,
+          "probability": 0.1
+        }
+      }
+    },
+    "yield_drop": {
+      "description": "Effective yield is reduced 75% for six months from month 6.",
+      "stochastic": {
+        "yield_process": {
+          "shock_month": 6,
+          "shock_duration": 6,
+          "shock_multiplier": 0.25
+        }
+      }
+    },
+    "storage_cost_increase": {
+      "description": "Miner cost level rises 50% for six months from month 6.",
+      "stochastic": {
+        "cost_process": {
+          "shock_month": 6,
+          "shock_duration": 6,
+          "shock_multiplier": 1.5
+        }
+      }
+    },
+    "slippage_increase": {
+      "description": "Realized slippage doubles for six months from month 6.",
+      "stochastic": {
+        "slippage": {
+          "shock_month": 6,
+          "shock_duration": 6,
+          "shock_multiplier": 2.0
+        }
+      }
+    },
+    "demand_increase": {
+      "description": "Dataset arrival intensity doubles for six months from month 6.",
+      "stochastic": {
+        "demand": {
+          "shock_month": 6,
+          "shock_duration": 6,
+          "shock_multiplier": 2.0
+        }
+      }
+    },
+    "token_crash_90pct": {
+      "description": "Token price falls 90% once at month 6.",
+      "interpretation": "settlement_only",
+      "stochastic": {
+        "token_price": {
+          "crash_month": 6,
+          "crash_multiplier": 0.1
+        }
+      }
+    }
+  },
+  "token_crash_interpretation": "settlement-only: USD miner profit and USD storage obligation are unchanged",
+  "provenance": {
+    "created_at_utc": "2026-10-23T07:55:40.289990+00:00",
+    "git_commit": "1cc618ee8154ec1fe5606c31b7b79f1604804540",
+    "git_dirty": true,
+    "python_version": "3.13.12 | packaged by Anaconda, Inc. | (main, Feb 24 2026, 16:05:56) [MSC v.1942 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "package_versions": {
+      "numpy": "2.5.3",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "pytest": "9.1.1"
+    }
+  }
+}

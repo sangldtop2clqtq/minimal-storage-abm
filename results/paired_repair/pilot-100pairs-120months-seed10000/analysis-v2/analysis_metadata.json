@@ -1,0 +1,8 @@
+{
+  "source_summary": "C:\\Users\\Sang\\Documents\\engram\\Minimal ABM\\results\\paired_repair\\pilot-100pairs-120months-seed10000\\summary.csv",
+  "independent_unit": "pair / simulated trajectory",
+  "contrast": "dynamic - fixed",
+  "bootstrap_samples": 5000,
+  "bootstrap_seed": 20261023,
+  "recovery_missing_policy": "No completed recovery remains missing; it is not replaced with zero. Unrecovered episode counts are retained separately."
+}

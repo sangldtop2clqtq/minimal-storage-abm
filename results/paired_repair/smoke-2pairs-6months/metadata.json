@@ -1,0 +1,35 @@
+{
+  "experiment": "paired_repair",
+  "pair_count": 2,
+  "policies": [
+    "fixed",
+    "dynamic"
+  ],
+  "comparisons": {
+    "equal_base_reward": {
+      "base_reward": 1.0,
+      "fixed_alpha": 0.0,
+      "dynamic_alpha": 2.0
+    }
+  },
+  "horizon_months": 6,
+  "seed_mapping": {
+    "model_seed_start": 2000,
+    "model_seed_rule": "model_seed_start + pair_id",
+    "environment_seed_rule": "model_seed + 1000003"
+  },
+  "randomness": "Paired policies share initialization and exogenous seeds; endogenous draws are keyed by stream, month, and entity.",
+  "provenance": {
+    "created_at_utc": "2026-10-23T07:45:47.854426+00:00",
+    "git_commit": "1cc618ee8154ec1fe5606c31b7b79f1604804540",
+    "git_dirty": true,
+    "python_version": "3.13.12 | packaged by Anaconda, Inc. | (main, Feb 24 2026, 16:05:56) [MSC v.1942 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "package_versions": {
+      "numpy": "2.5.3",
+      "pandas": "3.0.6",
+      "matplotlib": "3.11.2",
+      "pytest": "9.1.1"
+    }
+  }
+}
